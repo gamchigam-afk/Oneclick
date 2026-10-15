@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ONE CLICK</title>
+<style>
+body {
+  margin: 0;
+  background: #090b14;
+  color: white;
+  font-family: system-ui, sans-serif;
+  text-align: center;
+  padding: 24px 12px;
+}
+main { max-width: 600px; margin: auto; }
+h1 { letter-spacing: 5px; color: #62f5df; }
+.panel {
+  background: #151b2d;
+  border: 1px solid #293454;
+  border-radius: 20px;
+  padding: 24px 16px;
+  margin: 16px 0;
+}
+#coins { font-size: 48px; font-weight: 900; }
+#clicker {
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  border: 3px solid #62f5df;
+  background: #152c42;
+  color: white;
+  font-size: 26px;
+  font-weight: bold;
+  margin: 20px;
+  cursor: pointer;
+  box-shadow: 0 0 30px #62f5df30;
+}
+#clicker:active { transform: scale(.94); }
+button.upgrade {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 16px;
+  border: 0;
+  border-radius: 12px;
+  background: #62f5df;
+  color: #09151a;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+}
+button:disabled { opacity: .4; }
+small { color: #a6b0cc; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ONE CLICK.</h1>
+  <div class="panel">
+    <small>YOUR COINS</small>
+    <div id="coins">0</div>
+    <p>클릭당 +<span id="power">1</span> 코인</p>
+    <p>자동 생산: 초당 <span id="auto">0</span> 코인</p>
+    <button id="clicker">TAP!<br><small>코인 획득</small></button>
+  </div>
+
+  <div class="panel">
+    <h2>⚙️ 업그레이드</h2>
+    <button class="upgrade" id="upgrade">
+      👆 강한 손가락 — 25 코인
+    </button>
+    <button class="upgrade" id="robot">
+      🤖 코인 봇 — 50 코인
+    </button>
+    <p><small>진행 상황은 자동 저장됩니다.</small></p>
+    <button class="upgrade" id="reset">게임 초기화</button>
+  </div>
+</main>
+
+<script>
+const defaults = {
+  coins: 0, power: 1, auto: 0,
+  clickLevel: 0, botLevel: 0
+};
+let game;
+try {
+  game = {
+    ...defaults,
+    ...JSON.parse(localStorage.getItem("oneclick") || "{}")
+  };
+} catch {
+  game = {...defaults};
+}
+
+const $ = id => document.getElementById(id);
+const clickCost = () => Math.floor(25 * 1.65 ** game.clickLevel);
+const botCost = () => Math.floor(50 * 1.7 ** game.botLevel);
+
+function save() {
+  try { localStorage.setItem("oneclick", JSON.stringify(game)); }
+  catch {}
+}
+
+function render() {
+  $("coins").textContent = Math.floor(game.coins).toLocaleString();
+  $("power").textContent = game.power;
+  $("auto").textContent = game.auto;
+  $("upgrade").textContent =
+    `👆 강한 손가락 — ${clickCost()} 코인`;
+  $("robot").textContent =
+    `🤖 코인 봇 — ${botCost()} 코인`;
+  $("upgrade").disabled = game.coins < clickCost();
+  $("robot").disabled = game.coins < botCost();
+}
+
+$("clicker").onclick = () => {
+  game.coins += game.power;
+  render();
+  save();
+};
+
+$("upgrade").onclick = () => {
+  const cost = clickCost();
+  if (game.coins < cost) return;
+  game.coins -= cost;
+  game.clickLevel++;
+  game.power++;
+  render();
+  save();
+};
+
+$("robot").onclick = () => {
+  const cost = botCost();
+  if (game.coins < cost) return;
+  game.coins -= cost;
+  game.botLevel++;
+  game.auto++;
+  render();
+  save();
+};
+
+$("reset").onclick = () => {
+  if (!confirm("정말 초기화할까?")) return;
+  game = {...defaults};
+  save();
+  render();
+};
+
+setInterval(() => {
+  if (game.auto > 0) {
+    game.coins += game.auto;
+    render();
+    save();
+  }
+}, 1000);
+
+render();
+</script>
+</body>
+</html>
